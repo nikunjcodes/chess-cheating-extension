@@ -6,8 +6,7 @@ function startHack(element) {
     const hack = main();
     if (hack.status) {
         element.disabled = false;
-        element.innerHTML =
-            "Hack Running. <span id='best-move'> Calculating Best Move. </span>";
+        element.innerHTML = "Hack Running. <span id='best-move'> Calculating Best Move. </span>";
     } else {
         element.innerHTML = "Start Hack";
         element.disabled = false;
@@ -30,7 +29,9 @@ function main() {
     }
     playerColor = playerColor[0].toLowerCase();
 
-    const map = { 1:"a" , 2:"b", 3:"c", 4:"d", 5:"e", 6:"f", 7:"g", 8:"h" };
+    const bmap = { 1:"a" , 2:"b" , 3:"c" , 4:"d" , 5:"e" , 6:"f" , 7:"g" , 8:"h" };
+    const map = {"a" : 1 , "b" : 2 , "c" : 3 , "d" : 4 , "e" : 5 , "f" : 6 , "g" : 7 , "h" : 8 };
+    
 
     function getFenString() {
         let fenString = "";
@@ -58,21 +59,35 @@ function main() {
     }
 
     function updateBestMove(bestMove) {
+        console.log('Received best move:', bestMove); 
+        if (!bestMove || bestMove.length < 4) {
+            console.error('Invalid best move:', bestMove);
+            return;
+        }
         const [fromFile, fromRank, toFile, toRank] = bestMove;
         const initialPos = `${map[fromFile]}${fromRank}`;
         const finalPos = `${map[toFile]}${toRank}`;
         document.querySelectorAll(".cheat-highlight").forEach(element => element.remove());
         createHighlightElement(initialPos);
         createHighlightElement(finalPos);
-        document.getElementById("best-move").innerHTML = `Best Move: ${initialPos} -> ${finalPos}`;
+        document.getElementById("best-move").innerHTML = `Best Move: ${fromFile}${fromRank} -> ${toFile}${toRank}`;
     }
 
     function createHighlightElement(pos) {
+        const board = document.querySelector(".board");
+        if (!board) {
+            console.error("Board element not found");
+            return;
+        }
+        if (!pos) {
+            console.error("Invalid position:", pos);
+            return;
+        }
         const highlight = document.createElement("div");
         highlight.className = `highlight cheat-highlight square-${pos}`;
         highlight.style.backgroundColor = "red";
         highlight.style.opacity = "0.5";
-        document.querySelector("wc-chess-board").appendChild(highlight);
+        board.appendChild(highlight);
     }
 
     async function getBestMove(fenString, playerColor) {
@@ -81,15 +96,19 @@ function main() {
         try {
             const response = await fetch(url);
             const data = await response.json();
+            console.log("API response:", data); // Debugging output
             if (data.success) {
                 const bestMove = data.bestmove.split(' ')[1];
-                updateBestMove(bestMove);
+                if (bestMove) {
+                    updateBestMove(bestMove);
+                } else {
+                    console.error("Best move is undefined.");
+                }
             } else {
                 console.error("Error from API:", data.error);
             }
         } catch (error) {
             console.error("Network error:", error);
-            return null;
         }
     }
 
@@ -107,7 +126,11 @@ function main() {
             clearInterval(intervalId);
             document.querySelectorAll(".cheat-highlight").forEach(element => element.remove());
             flag = false;
-            document.getElementById("hack-button").innerHTML = "Hack Again.";
+            const button = document.getElementById("hack-button");
+            if (button) {
+                button.innerHTML = "Hack Again.";
+                button.disabled = false;
+            }
             return { status: false };
         };
     }
@@ -122,4 +145,8 @@ button.id = "hack-button";
 button.innerHTML = "Start Hack";
 button.onclick = () => startHack(button);
 const mainBody = document.querySelector(".board-layout-main");
-mainBody.prepend(button);
+if (mainBody) {
+    mainBody.prepend(button);
+} else {
+    console.error("Main body not found");
+}
