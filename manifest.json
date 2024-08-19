@@ -1,0 +1,18 @@
+{
+    "manifest_version": 2,
+    "name": "ChessCheater",
+    "version": "1.1",
+    "icons": { "16": "icon.png",
+    "48": "icon.png",
+   "128": "icon.png" },
+    "description": "Cheat",
+    "content_scripts": [
+      {
+        "js": ["cheat.js"],
+        "matches": [
+          "https://www.chess.com/*",
+          "https://chess.com/*"
+        ]
+      }
+    ]
+  }
