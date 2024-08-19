@@ -1,5 +1,5 @@
 let flag = false;
-
+let lastFenString = "";
 function startHack(element) {
     if (flag) return;
     flag = true;
@@ -113,12 +113,13 @@ function main() {
     }
 
     function startListeningForMoves() {
-        let fenString = getFenString();
+        lastFenString = getFenString();
+
         const intervalId = setInterval(() => {
             const newFenString = getFenString();
-            if (newFenString !== fenString) {
-                fenString = newFenString;
-                getBestMove(fenString, playerColor);
+            if (newFenString !== lastFenString) {
+                lastFenString = newFenString;
+                getBestMove(newFenString, playerColor);
             }
         }, 1000);
 
