@@ -1,5 +1,6 @@
 let flag = false;
 let lastFenString = "";
+
 function startHack(element) {
     if (flag) return;
     flag = true;
@@ -17,21 +18,22 @@ function startHack(element) {
 function main() {
     const chessboard = document.querySelector(".board");
     if (!chessboard) {
-        return {
-            status: false,
-            error: "Chessboard not found",
-        };
+        return { status: false, error: "Chessboard not found" };
     }
 
-    let playerColor = prompt("Enter your color (white/black): ");
-    while (!['white', 'black'].includes(playerColor.toLowerCase())) {
-        playerColor = prompt("Enter your color (white/black): ");
+    // Automatically detect player color
+    const boardParent = chessboard.closest(".board-layout-chessboard");
+    let playerColor = 'w'; // Default to white
+    if (boardParent) {
+        playerColor = boardParent.classList.contains("orientation-white") ? 'w' : 'b';
+    } else {
+        return { status: false, error: "Could not detect player color" };
     }
-    playerColor = playerColor[0].toLowerCase();
 
-    const bmap = { 1:"a" , 2:"b" , 3:"c" , 4:"d" , 5:"e" , 6:"f" , 7:"g" , 8:"h" };
-    const map = {"a" : 1 , "b" : 2 , "c" : 3 , "d" : 4 , "e" : 5 , "f" : 6 , "g" : 7 , "h" : 8 };
-    
+    console.log(`Detected player color: ${playerColor === 'w' ? 'white' : 'black'}`);
+
+    const bmap = { 1: "a", 2: "b", 3: "c", 4: "d", 5: "e", 6: "f", 7: "g", 8: "h" };
+    const map = { "a": 1, "b": 2, "c": 3, "d": 4, "e": 5, "f": 6, "g": 7, "h": 8 };
 
     function getFenString() {
         let fenString = "";
@@ -59,7 +61,7 @@ function main() {
     }
 
     function updateBestMove(bestMove) {
-        console.log('Received best move:', bestMove); 
+        console.log('Received best move:', bestMove);
         if (!bestMove || bestMove.length < 4) {
             console.error('Invalid best move:', bestMove);
             return;
@@ -74,20 +76,11 @@ function main() {
     }
 
     function createHighlightElement(pos) {
-        const board = document.querySelector(".board");
-        if (!board) {
-            console.error("Board element not found");
-            return;
-        }
-        if (!pos) {
-            console.error("Invalid position:", pos);
-            return;
-        }
         const highlight = document.createElement("div");
         highlight.className = `highlight cheat-highlight square-${pos}`;
         highlight.style.backgroundColor = "red";
         highlight.style.opacity = "0.5";
-        board.appendChild(highlight);
+        document.querySelector(".board").appendChild(highlight);
     }
 
     async function getBestMove(fenString, playerColor) {
@@ -96,58 +89,39 @@ function main() {
         try {
             const response = await fetch(url);
             const data = await response.json();
-            console.log("API response:", data); // Debugging output
             if (data.success) {
                 const bestMove = data.bestmove.split(' ')[1];
-                if (bestMove) {
-                    updateBestMove(bestMove);
-                } else {
-                    console.error("Best move is undefined.");
-                }
-            } else {
-                console.error("Error from API:", data.error);
+                updateBestMove(bestMove);
             }
         } catch (error) {
             console.error("Network error:", error);
         }
     }
 
-    function startListeningForMoves() {
-        lastFenString = getFenString();
-
-        const intervalId = setInterval(() => {
+    function observeBoardChanges() {
+        const observer = new MutationObserver(() => {
             const newFenString = getFenString();
             if (newFenString !== lastFenString) {
                 lastFenString = newFenString;
                 getBestMove(newFenString, playerColor);
             }
-        }, 1000);
+        });
 
-        document.getElementById("hack-button").onclick = () => {
-            clearInterval(intervalId);
-            document.querySelectorAll(".cheat-highlight").forEach(element => element.remove());
-            flag = false;
-            const button = document.getElementById("hack-button");
-            if (button) {
-                button.innerHTML = "Hack Again.";
-                button.disabled = false;
-            }
-            return { status: false };
-        };
+        observer.observe(chessboard, { childList: true, subtree: true });
     }
 
-    startListeningForMoves();
+    observeBoardChanges();
     return { status: true };
 }
 
+// Create the button
 const button = document.createElement("button");
 button.className = "ui_v5-button-component ui_v5-button-primary ui_v5-button-large ui_v5-button-full";
 button.id = "hack-button";
 button.innerHTML = "Start Hack";
 button.onclick = () => startHack(button);
+
+// Add the button to the main body
 const mainBody = document.querySelector(".board-layout-main");
-if (mainBody) {
-    mainBody.prepend(button);
-} else {
-    console.error("Main body not found");
-}
+if (mainBody) mainBody.prepend(button);
+else console.error("Main body not found");
